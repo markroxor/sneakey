@@ -104,7 +104,6 @@ function printTable()
                     table="${table}$(printf '%s#+' "$(repeatString '#+' "${numberOfColumns}")")"
                 fi
             done
-
             if [[ "$(isEmptyString "${table}")" = 'false' ]]
             then
                 echo -e "${table}" | column -s '#' -t | awk '/^\+/{gsub(" ", "-", $0)}1'
