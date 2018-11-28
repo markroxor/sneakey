@@ -149,3 +149,25 @@ function trimString()
 
     sed 's,^[[:blank:]]*,,' <<< "${string}" | sed 's,[[:blank:]]*$,,'
 }
+
+function _set()
+{
+    dic=$1
+    var=$3
+    val=$4
+    
+    if [ -z $var ] || [ -z $val ]; then
+        echo 'Invalid usage of set. See help'
+    else
+        dic[$var]=$val
+    fi    
+}
+
+function _get()
+{
+    # echo 'in get'
+    dic=$1
+    # echo $1
+    printf "Current variable configuration in get.\n"
+    printTable ',' "$(for i in "${!dic[@]}"; do printf "%s,%s\n" $i ${dic[$i]}; done)"
+}

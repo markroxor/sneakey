@@ -2,12 +2,12 @@
 set -e
 
 . utils.sh
-. tools/scan.sh
-. tools/find_open_ports.sh
 
-printWelcome
-
-printf "Type 'help' to get a list of commands.\n"
+# import tools
+for tool in $(ls tools/)
+do
+    eval '. tools/$tool'
+done
 
 exit_msg()
 {
@@ -58,78 +58,83 @@ help['exit']='Exits Annihilator.'
 
 trap exit_msg INT
 
-# for cmd in $(ls tools/);
-# do
-#     printf '%s\n' $cmd
-#     # foo
-# done
-
 #--------------------------------------------------------------------------------------------------#
-declare -A vars
-vars[vip]=''
-vars[port]='80'
+declare -A global_vars
+global_vars[vip]=''
+global_vars[port]='80'
 #--------------------------------------------------------------------------------------------------#
 
 interfaces=$(ifconfig | awk '$1=="inet"  {print f} {f=$1}' | sed 's/://g')
 ips=$(ifconfig | awk '/inet /{print substr($2,1)}')
 
+
+printWelcome
+printf "Type 'help' to get a list of commands.\n"
 network_config
+
+
+#------------------------------------------Project-------------------------------------------------#
+printf "Type 'list' to get list of existing projects or type a new project name.\n"
+
+mkdir -p projects/
+while true; do
+    current_subshell="(Enter project name.)"
+    prompt "$current_subshell"
+    
+    read cmd
+    if [ -z "$cmd" ]; then
+        continue
+    elif [ "$cmd" = 'list' ]; then
+        printf "Existing projects are -\n"
+        for project in $(ls projects/)
+        do
+            printf "%s\n" $project
+        done
+    else
+        if [ -d "projects/$cmd" ]; then
+            printf "Using existing project %s\n" $cmd
+        else
+            mkdir -p projects/$cmd
+            printf "Created new project %s\n" projects/$cmd
+        fi 
+
+        break
+    fi
+done
+
+current_subshell=''
+#--------------------------------------------------------------------------------------------------#
 while true ; do
     prompt $current_subshell
     read cmd
 
     if [ -z "$cmd" ]; then
-        # pass
-        true
+        # continue, on receiving an empty command
+        continue
 
     elif [ "$cmd" = 'var_config' ]; then
         printf "Current variable configuratin.\n"
-        printTable ',' "$(for i in "${!vars[@]}"; do printf "%s,%s\n" $i ${vars[$i]}; done)"
-
+        printTable ',' "$(for i in "${!global_vars[@]}"; do printf "%s,%s\n" $i ${global_vars[$i]}; done)"
 
     elif [ "$cmd" = 'net_conf' ]; then
         network_config
 
-    elif [ "$cmd" = 'scan' ]; then
-        current_subshell='(scan)'
-        printf "Choose interface to scan -\n"
-
-        table="Interface, IP\n$(for i in "${!net_conf[@]}"; do printf "%s,%s\n" $i ${net_conf[$i]}; done)"
-        printTable ',' "$table"
-
-        while true; do
-            prompt $current_subshell
-
-            read cmd
-
-            if [ -z "$cmd" ]; then
-                true
-            elif [ "$cmd" = 'exit' ]; then
-                break
-            elif [ -z ${net_conf[$cmd]} ]; then
-                printf "%s is not a valid interface. \n" $cmd
-            else
-                nmap -snP ${net_conf[$cmd]}/24 | grep 'Nmap scan report'
-                break 
-            fi
-        done
-        current_subshell=''
-
     elif [ "$cmd" = 'list_ports' ]; then
-        if [ -z ${vars[vip]} ]; then
+        if [ -z ${global_vars[vip]} ]; then
             printf 'Victim IP (vip) not set.\n'
         else
-            nmap -p- ${vars[vip]}
+            nmap -p- ${global_vars[vip]}
         fi
 
     elif [ $(echo $cmd | cut -d ' ' -f 1) = 'set' ]; then
+        # _set global_vars $cmd
         var=$(echo $cmd | cut -d ' ' -f 2)
         val=$(echo $cmd | cut -d ' ' -f 3)
 
         if [ -z $var ] || [ -z $val ]; then
             echo 'Invalid usage of set. See help'
         else
-            vars[$var]=$val
+            global_vars[$var]=$val
         fi
 
     elif [ "$cmd" = 'help' ]; then
@@ -140,9 +145,12 @@ while true ; do
         
     elif [ "$cmd" = 'exit' ]; then
         exit_msg
-
+    
+    # test if _$cmd is part of tools.
+    elif ! type "_$cmd" >/dev/null 2>&1; then
+        printf 'Unrecognised command. Type "help" for list of commands.\n'
     else
-        printf 'Unrecognised command. Try again..\n'
+        _$cmd
     fi
 
 done
