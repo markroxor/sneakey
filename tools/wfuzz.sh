@@ -1,3 +1,4 @@
+#!/usr/local/Cellar/bash/5.0.3/bin/bash
 #--------------------------------------------------------------------------------------------------#
 declare -A wfuzz_vars
 wfuzz_vars[wordlist]='/usr/share/wfuzz/wordlist/general/big.txt'

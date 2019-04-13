@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/local/Cellar/bash/5.0.3/bin/bash
 
 heading=("
    _____                .__    .__.__          __                
@@ -49,7 +49,7 @@ heading=("
 function printWelcome()
 {
     len=$((${#heading[@]}-1))
-    random=$(shuf -i 0-$len -n 1)
+    random=$(gshuf -i 0-$len -n 1)
 
     printf "%s" "${heading[$random]}"
 }

@@ -1,5 +1,4 @@
-#!/bin/bash
-set -e
+#!/usr/local/Cellar/bash/5.0.3/bin/bash
 
 . utils.sh
 
@@ -28,18 +27,16 @@ declare -A net_conf
 network_config()
 {
     printf 'Current network configuration is -\n'
-    
     i=1
     while true; do
         interface=$(echo $interfaces | cut -d ' ' -f $i)
-        ip=$(echo $ips | cut -d $' ' -f $i)
+        ip=$(ipconfig getifaddr $interface 2> /dev/null)
 
         if [ -z $interface ];
         then
             break
         else
             net_conf[$interface]=$ip
-
         fi
             ((i++))
         done
@@ -64,9 +61,8 @@ global_vars[vip]=''
 global_vars[port]='80'
 #--------------------------------------------------------------------------------------------------#
 
-interfaces=$(ifconfig | awk '$1=="inet"  {print f} {f=$1}' | sed 's/://g')
-ips=$(ifconfig | awk '/inet /{print substr($2,1)}')
-
+# interfaces=$(ifconfig | awk '$1=="inet"  {print f} {f=$1}' | sed 's/://g')
+interfaces=$(networksetup -listallhardwareports | awk '/Device:/{print $2}' | tr  '\n' ' ')
 
 printWelcome
 printf "Type 'help' to get a list of commands.\n"
@@ -113,7 +109,7 @@ while true ; do
         continue
 
     elif [ "$cmd" = 'var_config' ]; then
-        printf "Current variable configuratin.\n"
+        printf "Current variable configuration.\n"
         printTable ',' "$(for i in "${!global_vars[@]}"; do printf "%s,%s\n" $i ${global_vars[$i]}; done)"
 
     elif [ "$cmd" = 'net_conf' ]; then
@@ -123,7 +119,7 @@ while true ; do
         if [ -z ${global_vars[vip]} ]; then
             printf 'Victim IP (vip) not set.\n'
         else
-            nmap -p- ${global_vars[vip]}
+            nmap -p- ${global_vars[vip]} | grep 'open\|OS'
         fi
 
     elif [ $(echo $cmd | cut -d ' ' -f 1) = 'set' ]; then
