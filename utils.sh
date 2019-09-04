@@ -150,7 +150,7 @@ function trimString()
     sed 's,^[[:blank:]]*,,' <<< "${string}" | sed 's,[[:blank:]]*$,,'
 }
 
-function _set()
+function set()
 {
     dic=$1
     var=$3
@@ -163,7 +163,7 @@ function _set()
     fi    
 }
 
-function _get()
+function get()
 {
     # echo 'in get'
     dic=$1

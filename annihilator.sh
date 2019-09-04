@@ -146,11 +146,15 @@ while true ; do
     elif [ "$cmd" = 'exit' ]; then
         exit_msg
     
-    # test if _$cmd is part of tools.
-    elif ! type "_$cmd" >/dev/null 2>&1; then
+    # test if _$cmd is not part of tools.
+    #elif [ ${cmd:0:1} != '_' ] ; then #&& 
+    elif ! type $(echo "${cmd:1:${#cmd}}" | cut -d ' ' -f 1) >/dev/null 2>&1 ; then
+	echo $(echo "${cmd:1:${#cmd}}" | cut -d ' ' -f 1)
         printf 'Unrecognised command. Type "help" for list of commands.\n'
+    #elif  
     else
-        _$cmd
+	#if i
+        ${cmd:1:${#cmd}}
     fi
 
 done
