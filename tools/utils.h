@@ -1,7 +1,14 @@
 /* Header structures are copied from official source and modified as needed. */
-
+// #include<stdio.h>
+// #include<pcap.h>
+// //#include<arpa/inet.h>
+// #include<netinet/if_ether.h> 
+// #include<netinet/ip.h>	
+// #include<netinet/udp.h>
+// #include<netinet/tcp.h>
 #define ETH_ALEN 6
 #define ETH_HLEN 14
+#define IP_ADDR_LEN 4
 struct ethhdr_ { 
     unsigned char h_dest[ETH_ALEN];
     unsigned char h_source[ETH_ALEN];
@@ -36,6 +43,16 @@ void print_mac(const unsigned char ether_addr[ETH_ALEN])
         printf("%02x", ether_addr[i]);
         if (i!=ETHER_ADDR_LEN-1)
             printf(":");
+    }
+    printf("\n");
+}
+void print_ip_addr(const unsigned char ip_addr[IP_ADDR_LEN])
+{
+    for(int i=0; i< IP_ADDR_LEN; i++)
+    {
+        printf("%d", ip_addr[i]);
+        if (i!=IP_ADDR_LEN-1)
+            printf(".");
     }
     printf("\n");
 }
