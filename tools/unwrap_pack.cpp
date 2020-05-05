@@ -11,6 +11,7 @@
 #include<netinet/ip.h>	
 #include<netinet/udp.h>
 #include<netinet/tcp.h>
+#include<net/if_arp.h>
 #include"utils.h"
 
 #define PROMISCUOUS 1
@@ -29,7 +30,24 @@ void unwrap_data_link(const u_char *hdr)
     printf("\n");
 }
 
-int unwrap_network(const u_char *hdr)
+void unwrap_arp(const u_char *hdr)
+{
+    const struct arphdr *arp_hdr;
+    arp_hdr = (const struct arphdr *) hdr;
+    printf("Unwrapping arp header\n");
+    printf("Source IP: ");
+    print_ip_addr(arp_hdr->__ar_sip);
+    printf("Source MAC ID - ");
+    print_mac(arp_hdr->__ar_sha);
+    printf("Destination IP: ");
+    print_ip_addr(arp_hdr->__ar_tip);
+    printf("Destination MAC ID - ");
+    print_mac(arp_hdr->__ar_tha);
+    printf("\n");
+    printf("\n");
+}
+
+int unwrap_ip(const u_char *hdr)
 {
     const struct iphdr_ *net_hdr;
     net_hdr = (const struct iphdr_ *) hdr;
@@ -81,18 +99,21 @@ void callback(u_char *arg, const struct pcap_pkthdr * header, const u_char * pac
     unwrap_data_link(packet + processed_hdr_offset);
     processed_hdr_offset += ETHER_HDR_LEN;
 
-    int protocol = unwrap_network(packet + processed_hdr_offset);
-    processed_hdr_offset += sizeof(struct iphdr_);
+    unwrap_arp(packet + processed_hdr_offset);
+    processed_hdr_offset += sizeof(struct arphdr);
+
+    // int protocol = unwrap_ip(packet + processed_hdr_offset);
+    // processed_hdr_offset += sizeof(struct iphdr_);
     
-    switch(protocol)
-    {
-        case 6:
-            processed_hdr_offset += decode_tcp(packet + processed_hdr_offset);
-            break;
-        case 17:
-            processed_hdr_offset += decode_udp(packet + processed_hdr_offset);
-            break;
-    }
+    // switch(protocol)
+    // {
+    //     case 6:
+    //         processed_hdr_offset += decode_tcp(packet + processed_hdr_offset);
+    //         break;
+    //     case 17:
+    //         processed_hdr_offset += decode_udp(packet + processed_hdr_offset);
+    //         break;
+    // }
 
     packet = packet + processed_hdr_offset;
     int packet_len = header->len - processed_hdr_offset;
@@ -116,7 +137,7 @@ int main(int argc, char ** argv )
 
     if (pcap_findalldevs(&interfaces, err_buff) == -1)
     {
-        printf("Cant find interfaces exiting...");
+        fprintf(stderr, "Cant find interfaces exiting...");
         return 1;
     }
 
@@ -126,23 +147,22 @@ int main(int argc, char ** argv )
     {
         printf("%s : %s \n", interfaces->name, interfaces->description);
         printf("Select this interface? (y/n)\n");
-        scanf("%s", &i);
-        if (i=='y')
-            break;
+        // scanf("%s", &i);
+        break;
         interfaces = interfaces->next;
     }
     if (interfaces)
         printf("You chose %s\n", interfaces->name);
     else
     {
-        printf("Your interface not found.. exiting...\n");
+        fprintf(stderr, "Your interface not found.. exiting...\n");
         return 1;
     }
 
     p_handler = pcap_open_live(interfaces->name, BUFSIZ, PROMISCUOUS, 1000, err_buff);
     if(p_handler == NULL)
     {
-        printf("Could not open socket on %s the error is : %s, exiting...\n", interfaces->name, err_buff);
+        fprintf(stderr, "Could not open socket on %s the error is : %s, exiting...\n", interfaces->name, err_buff);
         return 1;
     }
 
