@@ -1,11 +1,17 @@
 #include<libnet.h>
 #include"utils.h"
 
+/*
+verify using -
+tcpdump -n -ttt "ether host xx:xx:xx:xx:xx:xx and icmp"
+*/
+
 static libnet_ethernet_hdr eth_hdr;
 int main(int argc, char **argv)
 {
     const char *device = NULL;
-    char targ_ip_addr_char[16] = "192.168.0.1";
+    // char targ_ip_addr_char[16] = "192.168.0.1";
+    char targ_ip_addr_char[16] = "192.168.0.255";
     char *err_buff;
     libnet_t *lc;  // libnet context
 

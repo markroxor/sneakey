@@ -36,13 +36,13 @@ void unwrap_arp(const u_char *hdr)
     arp_hdr = (const struct arphdr *) hdr;
     printf("Unwrapping arp header\n");
     printf("Source IP: ");
-    print_ip_addr(arp_hdr->__ar_sip);
-    printf("Source MAC ID - ");
-    print_mac(arp_hdr->__ar_sha);
-    printf("Destination IP: ");
-    print_ip_addr(arp_hdr->__ar_tip);
-    printf("Destination MAC ID - ");
-    print_mac(arp_hdr->__ar_tha);
+    // print_ip_addr(arp_hdr->__ar_sip);
+    // printf("Source MAC ID - ");
+    // print_mac(arp_hdr->__ar_sha);
+    // printf("Destination IP: ");
+    // print_ip_addr(arp_hdr->__ar_tip);
+    // printf("Destination MAC ID - ");
+    // print_mac(arp_hdr->__ar_tha);
     printf("\n");
     printf("\n");
 }
@@ -99,21 +99,26 @@ void callback(u_char *arg, const struct pcap_pkthdr * header, const u_char * pac
     unwrap_data_link(packet + processed_hdr_offset);
     processed_hdr_offset += ETHER_HDR_LEN;
 
-    unwrap_arp(packet + processed_hdr_offset);
-    processed_hdr_offset += sizeof(struct arphdr);
+    // unwrap_arp(packet + processed_hdr_offset);
+    // processed_hdr_offset += sizeof(struct arphdr);
 
-    // int protocol = unwrap_ip(packet + processed_hdr_offset);
-    // processed_hdr_offset += sizeof(struct iphdr_);
+    int protocol = unwrap_ip(packet + processed_hdr_offset);
+    processed_hdr_offset += sizeof(struct iphdr_);
     
-    // switch(protocol)
-    // {
-    //     case 6:
-    //         processed_hdr_offset += decode_tcp(packet + processed_hdr_offset);
-    //         break;
-    //     case 17:
-    //         processed_hdr_offset += decode_udp(packet + processed_hdr_offset);
-    //         break;
-    // }
+    switch(protocol)
+    {
+        // case 1:
+        //     processed_hdr_offset += decode_icmp(packet + processed_hdr_offset);
+        //     break;
+        case 6:
+            processed_hdr_offset += decode_tcp(packet + processed_hdr_offset);
+            break;
+        case 17:
+            processed_hdr_offset += decode_udp(packet + processed_hdr_offset);
+            break;
+        default:
+            printf("Protocol %d not implemented\n", protocol);
+    }
 
     packet = packet + processed_hdr_offset;
     int packet_len = header->len - processed_hdr_offset;

@@ -3,9 +3,13 @@
 // #include<libnet/libnet-functions.h>
 #include"utils.h"
 static libnet_ethernet_hdr eth_hdr;
+/*
+verify using -
+tcpdump  -n -ttt "host xx.xxx.x.xxx and arp"
+*/
 int main(int argc, char **argv)
 {
-    const char *device = "wlp2s0";
+    const char *device = NULL;
     char targ_ip_addr_char[16] = "127.0.0.1";
     char src_ip_addr_char[16] = "192.168.0.149";
     char targ_hw_addr_char[18] = "ff:ff:ff:ff:ff:ff";  // broadcast
