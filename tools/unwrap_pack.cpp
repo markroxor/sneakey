@@ -11,6 +11,8 @@
 #include<netinet/ip.h>	
 #include<netinet/udp.h>
 #include<netinet/tcp.h>
+#include <libnet.h>
+#include <libnet/libnet-functions.h>
 #include<net/if_arp.h>
 #include"utils.h"
 
@@ -64,16 +66,16 @@ int decode_tcp(const u_char *hdr)
     const struct tcphdr *tcp_hdr;
     tcp_hdr = (const struct tcphdr *)hdr;
     printf("Protocol: TCP\n");
-    printf("Source port:%d Destination port:%d \n", tcp_hdr->th_sport, tcp_hdr->th_dport);
-    printf("Sequence number:%d Acknowledgment number:%d \n", tcp_hdr->th_seq, tcp_hdr->th_ack);
-    printf("FIN flag:%d\n", (tcp_hdr->th_flags & TH_FIN) & 1);
-    printf("SYN Flag:%d\n", (tcp_hdr->th_flags & TH_SYN)%2 == 0);
-    printf("RST Flag:%d\n", (tcp_hdr->th_flags & TH_RST)%2 == 0);
+    printf("Source port:%hu Destination port:%hu \n", ntohs(tcp_hdr->th_sport), ntohs(tcp_hdr->th_dport));
+    printf("Sequence number:%u Acknowledgment number:%u \n", ntohl(tcp_hdr->th_seq), ntohl(tcp_hdr->th_ack));
+    printf("FIN flag:%d\n", (tcp_hdr->th_flags & TH_FIN));
+    printf("SYN Flag:%d\n", (tcp_hdr->th_flags & TH_SYN));
+    printf("RST Flag:%d\n", (tcp_hdr->th_flags & TH_RST));
     printf("PUSH Flag:%d\n", (tcp_hdr->th_flags & TH_PUSH)%2 == 0);
     printf("ACK Flag:%d\n", (tcp_hdr->th_flags & TH_ACK)%2 == 0);
     printf("URG Flag:%d\n", (tcp_hdr->th_flags & TH_URG)%2 == 0);
     printf("Window:%d\n", tcp_hdr->th_win);
-    printf("Sum:%d\n", tcp_hdr->th_sum);
+    printf("Sum:%0x\n", tcp_hdr->th_sum);
     printf("Urgent pointer:%d\n", tcp_hdr->th_urp);
     printf("\n");
     return 4 * tcp_hdr->th_off;
@@ -94,7 +96,7 @@ void callback(u_char *arg, const struct pcap_pkthdr * header, const u_char * pac
 {
     int processed_hdr_offset = 0;
     banner_print();
-    printf("Packet header length is %d\n", header->len);
+    printf("Entire packet length is %d\n", header->len);
 
     unwrap_data_link(packet + processed_hdr_offset);
     processed_hdr_offset += ETHER_HDR_LEN;
@@ -103,7 +105,7 @@ void callback(u_char *arg, const struct pcap_pkthdr * header, const u_char * pac
     // processed_hdr_offset += sizeof(struct arphdr);
 
     int protocol = unwrap_ip(packet + processed_hdr_offset);
-    processed_hdr_offset += sizeof(struct iphdr_);
+    processed_hdr_offset += LIBNET_IPV4_H;
     
     switch(protocol)
     {
@@ -114,7 +116,8 @@ void callback(u_char *arg, const struct pcap_pkthdr * header, const u_char * pac
             processed_hdr_offset += decode_tcp(packet + processed_hdr_offset);
             break;
         case 17:
-            processed_hdr_offset += decode_udp(packet + processed_hdr_offset);
+            printf("protocol is udp, skipping unwrap\n");
+            // processed_hdr_offset += decode_udp(packet + processed_hdr_offset);
             break;
         default:
             printf("Protocol %d not implemented\n", protocol);
@@ -136,44 +139,15 @@ int main(int argc, char ** argv )
 {
     struct pcap_pkthdr header;
     char err_buff[PCAP_ERRBUF_SIZE];
-    char * device;
-    pcap_t *p_handler;
-    pcap_if_t *interfaces, *temp;
+    u_char *device = (u_char *)("lo");
 
-    if (pcap_findalldevs(&interfaces, err_buff) == -1)
-    {
-        fprintf(stderr, "Cant find interfaces exiting...");
+    pcap_t *p_handler = get_default_pcap_handler(0,(char *) device);
+    if (p_handler == NULL)
         return 1;
-    }
-
-    printf("Select one from available interfaces - \n");
-    char i;
-    while(interfaces)
-    {
-        printf("%s : %s \n", interfaces->name, interfaces->description);
-        printf("Select this interface? (y/n)\n");
-        // scanf("%s", &i);
-        break;
-        interfaces = interfaces->next;
-    }
-    if (interfaces)
-        printf("You chose %s\n", interfaces->name);
-    else
-    {
-        fprintf(stderr, "Your interface not found.. exiting...\n");
-        return 1;
-    }
-
-    p_handler = pcap_open_live(interfaces->name, BUFSIZ, PROMISCUOUS, 1000, err_buff);
-    if(p_handler == NULL)
-    {
-        fprintf(stderr, "Could not open socket on %s the error is : %s, exiting...\n", interfaces->name, err_buff);
-        return 1;
-    }
 
     int cnt = 1;
-    printf("Waiting for %d packet(s) on interface %s\n", cnt, interfaces->name);
     pcap_loop(p_handler, -1, callback, NULL);
+    pcap_close(p_handler);  // wont work?
 
     return 0;
 }

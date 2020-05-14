@@ -63,3 +63,41 @@ void banner_print()
     for(int i=0;i<100;i++) printf("#");
     printf("\n");
 }
+
+pcap_t * get_default_pcap_handler(int promiscuous, char *device)
+{
+    char err_buff[PCAP_ERRBUF_SIZE];
+
+    if(device==NULL)
+    {
+        pcap_if_t *interfaces;
+
+        if (pcap_findalldevs(&interfaces, err_buff) == -1)
+        {
+            fprintf(stderr, "Cant find interfaces exiting...");
+            return NULL;
+        }
+
+        printf("Select one from available interfaces - \n");
+        char i;
+        while(interfaces)
+        {
+            printf("%s : %s \n", interfaces->name, interfaces->description);
+            printf("Select this interface? (y/n)\n");
+            // scanf("%s", &i);
+            break;
+            interfaces = interfaces->next;
+        }
+        if (interfaces)
+            printf("You chose %s\n", interfaces->name);
+        else
+        {
+            fprintf(stderr, "Your interface not found.. exiting...\n");
+            return NULL;
+        }
+        device = interfaces->name;
+    }
+
+    int timeout_ms = 1000;
+    return pcap_open_live(device, BUFSIZ, promiscuous, timeout_ms, err_buff);
+}
